@@ -570,8 +570,9 @@ class TicketBaseService(BaseService):
         if base_field_dict:
             TicketRecord.objects.filter(id=ticket_id, is_deleted=0).update(**base_field_dict)
         # custom field
-        cls.update_ticket_custom_field(ticket_id, update_dict)
-
+        flag, result = cls.update_ticket_custom_field(ticket_id, update_dict)
+        if flag is False:
+            return False, result
         return True, ''
 
     @classmethod
@@ -1182,7 +1183,9 @@ class TicketBaseService(BaseService):
             if key in update_field_list:
                 update_field_dict[key] = value
 
-        cls.update_ticket_field_value(ticket_id, update_field_dict)
+        flag, result = cls.update_ticket_field_value(ticket_id, update_field_dict)
+        if flag is False:
+            return False, result
         # 更新工单流转记录，执行必要的脚本，通知消息
         flag, result = cls.get_ticket_all_field_value_json(ticket_id)
         if flag is False:
@@ -2425,7 +2428,8 @@ class TicketBaseService(BaseService):
             flag, ticket_result = cls.get_ticket_by_id(ticket_id)
             if flag is False:
                 return False, ticket_result
-            flag, start_state_result = workflow_state_service_ins.get_workflow_start_state(ticket_id)
+            flag, start_state_result = workflow_state_service_ins.get_workflow_start_state(
+                ticket_result.workflow_id)
             if flag is False:
                 return False,  start_state_result
             if ticket_result.creator == username and ticket_result.state_id == start_state_result.id:
